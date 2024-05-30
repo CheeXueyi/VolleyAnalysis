@@ -1,6 +1,7 @@
 # this file stores the functions used for prediction
 from typing import List, TypedDict
 from ultralytics import YOLO
+import torch
 import cv2
 
 class findAttacksRet(TypedDict):
@@ -23,7 +24,8 @@ def addToWindow(window, windowSize, newElem):
 def findAttacks(
         videoPath: str, 
         generateVideo: bool = True,
-        outputVideoPath: str = "./output/prediction.avi"
+        outputVideoPath: str = "./output/prediction.avi",
+        confidence: float = 0.5
     ) -> findAttacksRet:
     """given the path of a video, returns the frameNumber of all spikes.
     Parameters:
@@ -37,8 +39,12 @@ def findAttacks(
     """
 
     returnValue:findAttacksRet = {"totalFrames": 0, "attackFrames": []}
+    if 0 > confidence or confidence > 1: 
+        print("Invalid confidence value", confidence)
+        return returnValue
 
     # load model
+    torch.cuda.set_device(0)
     model = YOLO("./best.pt")
 
     # extract frames from video
@@ -61,9 +67,9 @@ def findAttacks(
         ret, frame = vid.read()
         if ret:
             # run the ai model on each frame
-            p = model.predict(frame, conf=0.5, classes=[0])[0]
+            p = model.predict(frame, conf=confidence, classes=[0], verbose=False)[0]
+
             # output frame to video to be outputted
-            
             if(generateVideo):
                 outVideo.write(p.plot())
             
@@ -81,18 +87,20 @@ def findAttacks(
                 # no attacks in frame
                 if actionWindow[0] == 1:
                     attacksInWindow -= 1
-                    addToWindow(actionWindow, 10, 0)
 
-            print(f"frame {f} processed")
+                addToWindow(actionWindow, 10, 0)
+
+            if f % (fps * 60) == 0: print(f"{frameToTime(fps, f)} processed")
         else:
             print(f"no frame {f}")
 
         if attacksInWindow >= 7 and f - lastAttackFrame > fps:
             # attack event registered
-            print("spike found, ", lastAttackFrame, f)
+            print(f"spike found at {frameToTime(fps, f - 9)}")
             lastAttackFrame = f
             returnValue["attackFrames"].append(f - 9)
 
+    print("Done")
     returnValue["totalFrames"] = length
     cv2.destroyAllWindows()
     outVideo.release()
