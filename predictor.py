@@ -12,8 +12,8 @@ def frameToTime(fps, frame):
     ms = frame / fps * 1000
     minutes = ms // (1000 * 60)
     seconds = (ms / 1000) - (minutes * 60)
-
-    return f"{int(minutes)} min {int(seconds)} seconds"
+    
+    return f"{int(minutes)}:{int(seconds):02d}"
 
 def addToWindow(window, windowSize, newElem):
     for i in range(windowSize - 1):
