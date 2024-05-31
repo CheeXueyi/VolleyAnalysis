@@ -44,7 +44,9 @@ def findAttacks(
         return returnValue
 
     # load model
-    torch.cuda.set_device(0)
+    # use gpu if available
+    if torch.cuda.device_count() > 0:
+        torch.cuda.set_device(0)
     model = YOLO("./best.pt")
 
     # extract frames from video
