@@ -3,6 +3,7 @@ from typing import List, TypedDict
 from ultralytics import YOLO
 import torch
 import cv2
+from time import time
 
 class findAttacksRet(TypedDict):
     totalFrames: int
@@ -23,7 +24,7 @@ def addToWindow(window, windowSize, newElem):
 
 def findAttacks(
         videoPath: str, 
-        generateVideo: bool = True,
+        generateVideo: bool = False,
         outputVideoPath: str = "./output/prediction.avi",
         confidence: float = 0.5
     ) -> findAttacksRet:
@@ -62,9 +63,15 @@ def findAttacks(
         width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         outVideo = cv2.VideoWriter(outputVideoPath, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
     
+    # sliding window
     actionWindow = [0] * 10
     attacksInWindow = 0
     lastAttackFrame = -1000
+
+    # progress information
+    start = time()
+    prev = start
+    print("Started")
     for f in range(length):
         ret, frame = vid.read()
         if ret:
@@ -91,8 +98,20 @@ def findAttacks(
                     attacksInWindow -= 1
 
                 addToWindow(actionWindow, 10, 0)
-
-            if f % (fps * 60) == 0: print(f"{frameToTime(fps, f)} processed")
+            
+            # print progress information
+            printTimeSpacing = 15 # number of frames between each progress update
+            if f % (fps * printTimeSpacing) == 0 and f != 0: 
+                curr = time()
+                timeTaken = curr - prev
+                processRate = (fps * printTimeSpacing) / timeTaken # in frames per second
+                framesLeft = length - f
+                secondsRemaining = framesLeft / processRate
+                print(
+                    f"{f / (fps * 60):.2f} minute(s) processed, {(f / length) * 100:.2f}% done, {int(secondsRemaining // 60)} minutes {int(secondsRemaining % 60)} seconds left"
+                )
+                prev = curr
+                
         else:
             print(f"no frame {f}")
 
@@ -102,7 +121,8 @@ def findAttacks(
             lastAttackFrame = f
             returnValue["attackFrames"].append(f - 9)
 
-    print("Done")
+    totalTimeTaken = time() - start
+    print(f"Analysis complete, time taken: {int(totalTimeTaken // 60)} minutes {int(totalTimeTaken % 60)} seconds ")
     returnValue["totalFrames"] = length
     cv2.destroyAllWindows()
     outVideo.release()
