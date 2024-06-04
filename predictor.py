@@ -64,7 +64,10 @@ def findAttacks(
         outVideo = cv2.VideoWriter(outputVideoPath, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
     
     # sliding window
-    actionWindow = [0] * 10
+    windowSize = int(fps // 3)
+    windowDensityThreshold = 0.7
+    attacksNeeded = int(windowDensityThreshold * windowSize)
+    actionWindow = [0] * windowSize
     attacksInWindow = 0
     lastAttackFrame = -1000
 
@@ -91,13 +94,13 @@ def findAttacks(
                     # update attacksInWindow
                     if actionWindow[0] == 0:
                         attacksInWindow += 1
-                    addToWindow(actionWindow, 10, 1)
+                    addToWindow(actionWindow, windowSize, 1)
             except:
                 # no attacks in frame
                 if actionWindow[0] == 1:
                     attacksInWindow -= 1
 
-                addToWindow(actionWindow, 10, 0)
+                addToWindow(actionWindow, windowSize, 0)
             
             # print progress information
             printTimeSpacing = 15 # number of frames between each progress update
@@ -115,11 +118,11 @@ def findAttacks(
         else:
             print(f"no frame {f}")
 
-        if attacksInWindow >= 7 and f - lastAttackFrame > fps:
+        if attacksInWindow >= attacksNeeded and f - lastAttackFrame > fps:
             # attack event registered
-            print(f"spike found at {frameToTime(fps, f - 9)}")
+            print(f"spike found at {frameToTime(fps, f - windowSize + 1)}")
             lastAttackFrame = f
-            returnValue["attackFrames"].append(f - 9)
+            returnValue["attackFrames"].append(f - windowSize + 1)
 
     totalTimeTaken = time() - start
     print(f"Analysis complete, time taken: {int(totalTimeTaken // 60)} minutes {int(totalTimeTaken % 60)} seconds ")
