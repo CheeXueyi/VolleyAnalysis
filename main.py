@@ -38,8 +38,10 @@ def main():
     # run prediction model
     ret = predictor.findAttacks(videoPath, generateVideo, outputVideoFile, confidence)
     
-    for p in ret['attackFrames']:
-        file.write(f"{predictor.frameToTime(fps, p - fps)}\n")
+    for i, p in enumerate(ret['attackFrames']):
+        if i % 10 == 0 and i != 0:
+            file.write("\n")
+        file.write(f"{predictor.frameToTime(fps, p - fps)} ")
         
     file.close()
 

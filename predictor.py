@@ -14,7 +14,7 @@ def frameToTime(fps, frame):
     minutes = ms // (1000 * 60)
     seconds = (ms / 1000) - (minutes * 60)
     
-    return f"{int(minutes)}:{int(seconds):02d}"
+    return f"{int(minutes):02d}:{int(seconds):02d}"
 
 def addToWindow(window, windowSize, newElem):
     for i in range(windowSize - 1):
@@ -72,6 +72,7 @@ def findAttacks(
     lastAttackFrame = -1000
 
     # progress information
+    print(fps)
     start = time()
     prev = start
     print("Started")
@@ -104,7 +105,7 @@ def findAttacks(
             
             # print progress information
             printTimeSpacing = 15 # number of frames between each progress update
-            if f % (fps * printTimeSpacing) == 0 and f != 0: 
+            if f % int(fps * printTimeSpacing) == 0 and f != 0: 
                 curr = time()
                 timeTaken = curr - prev
                 processRate = (fps * printTimeSpacing) / timeTaken # in frames per second
